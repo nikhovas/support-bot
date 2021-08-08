@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #ddd;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #1565C0;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<table id="customers">
+  <tr>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Port</th>
+  </tr>
+  <tr>
+    <td>Redis</td>
+    <td>Storage for questions and answers</td>
+    <td>8001</td>
+  </tr>
+  <tr>
+    <td>Postgres</td>
+    <td>Database</td>
+    <td>8081</td>
+  </tr>
+  <tr>
+    <td>RabbitMQ</td>
+    <td>Message broker</td>
+    <td>15672</td>
+  </tr>
+</table>
+
+</body>
+</html>

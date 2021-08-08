@@ -1,0 +1,130 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./data/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./data/rabbitmq/log/:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "alarms"]
+      interval: 10s
+      timeout: 10s
+      retries: 50
+  
+  redis:
+    image: "redis:alpine"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 50
+  
+  redis_viewer:
+    image: rediscommander/redis-commander
+    ports:
+      - 8001:8001
+    environment:
+      REDIS_HOSTS: redis
+      PORT: 8001
+    depends_on:
+      redis:
+        condition: service_healthy
+  
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: support_bot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - ./data/postgres:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 10s
+      retries: 50
+  
+  database_creator:
+    image: migrate/migrate
+    volumes:
+      - ./sql-migrate:/sql-migrate
+    command: -path=/sql-migrate -database postgres://postgres:postgres@postgres:5432/support_bot?sslmode=disable up
+    depends_on:
+      postgres:
+        condition: service_healthy
+  
+  database_viewer:
+    image: sosedoff/pgweb
+    ports: 
+      - 8081:8081
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/support_bot?sslmode=disable
+    depends_on:
+      - database_creator
+  
+  telegram_client_bot:
+    build: ./telegram-client-bot
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      TG_CLIENT_BOT_TOKEN: ${TG_CLIENT_BOT_TOKEN}
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  
+  telegram_operator_bot:
+    build: ./telegram-operator-bot
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      DATABASE_URL: postgres
+      TG_OPERATOR_BOT_TOKEN: ${TG_OPERATOR_BOT_TOKEN}
+      TG_OPERATOR_BOT_INACTIVITY_TIMEOUT: 3600
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+  
+  neural_worker:
+    build: ./neural-worker
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      REDIS_HOST: redis
+      NEURAL_QUESTIONS_QUEUE: neural_questions
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    volumes:
+      -  ./data/nltk:/root/nltk_data
+  
+  to_database_neural:
+    build: ./neural-worker
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/
+      REDIS_HOST: redis
+      TO_DATABASE_QUEUE: database_add
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+  
+  nginx:
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./gui-router:/usr/share/nginx/html

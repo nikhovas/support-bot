@@ -1,0 +1,11 @@
+{
+  "Auth via phone number": "Авторизоваться через телефон",
+  "Send phone": "Отправить номер телефона",
+  "Get Question": "Следующий вопрос",
+  "You do not have permission to use this bot": "У вас нет прав использовать данный бот",
+  "No questions yet": "Нет вопросов на данный момент",
+  "Error while getting question": "Ошибка во время получения вопроса",
+  "Press button to get question": "Нажмите на кнопку для получения вопроса",
+  "Timeout for question answering reached": "Превышено время ожидания для ответа на вопрос",
+  "Inactivity timeout. Please, auth again to use the bot.": "Превышено время бездействия. Пожалуйста, войдите заново для работы с ботом."
+}
